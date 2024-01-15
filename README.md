@@ -30,7 +30,7 @@
 
 ### ER diagram 
 
-![alt text]()
+![alt text](ER.jpg)
 
 ### Create tables in MySQL
 ```sql
