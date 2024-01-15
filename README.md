@@ -1,7 +1,6 @@
 # DBMS---Disaster-Response-Management-System
   As a part of our course, I made this project for Database Management Systems (DBMS). This project contains theoretical as well as implementation in SQL.
-### Report -
-![alt text](design phase report.pdf)
+
 ### Contents
   •	Project Description
   
