@@ -427,3 +427,346 @@ INSERT INTO DONATION (DONATION_ID, NAME, TYPE, AMOUNT, AREA_ID) VALUES (519, 'Ju
 INSERT INTO DONATION (DONATION_ID, NAME, TYPE, AMOUNT, AREA_ID) VALUES (520, 'Megan Smith', 'Supplies', 1000, 9);
 
 ```
+###Queries
+
+1. Find the total number of individuals affected by each emergency event, and list the events in descending order of the total number of affected individuals
+```sql
+SELECT e.Emg_id, COUNT(i.Individual_id) AS NumAffected
+FROM EMERGENCY_EVENT e
+JOIN AFFECTED_AREA a ON e.Emg_id = a.Emg_id
+JOIN AFFECTED_INDIVIDUAL i ON a.Area_id = i.Area_id
+GROUP BY e.Emg_id
+ORDER BY NumAffected DESC;
+```
+2.Find the total number of individuals affected by events that were
+responded to by  the Police Unit.
+```sql
+SELECT E1.Disaster_TYPE,COUNT(A1.NAME)
+FROM AFFECTED_INDIVIDUAL A1,AFFECTED_AREA A2,EMERGENCY_EVENT E1,EVENT_RESPONSE E2,TEAM T
+WHERE A1.AREA_ID=A2.AREA_ID AND A2.EMG_ID=E1.EMG_ID AND E1.EMG_ID=E2.EMG_ID AND
+E2.TASK_ID=T.TASK_ID AND T.TEAM_NAME='Police Unit' 
+GROUP BY E1.Disaster_TYPE
+```
+3. Retrieve the number of individuals affected in each severity category for each emergency event.
+```sql
+SELECT EMERGENCY_EVENT.Disaster_Type, AFFECTED_INDIVIDUAL.severity, COUNT(*) 
+FROM AFFECTED_INDIVIDUAL 
+JOIN AFFECTED_AREA ON AFFECTED_INDIVIDUAL.area_id = AFFECTED_AREA.area_id JOIN EMERGENCY_EVENT ON AFFECTED_AREA.Emg_id = EMERGENCY_EVENT.Emg_id
+GROUP BY EMERGENCY_EVENT.disaster_Type, AFFECTED_INDIVIDUAL.severity;
+```
+4. Give the number of events that each team has responded to.
+```sql
+SELECT Team_name, COUNT(*) AS total_events
+FROM TEAM
+INNER JOIN EVENT_RESPONSE ON TEAM.Task_id = EVENT_RESPONSE.Task_id
+GROUP BY Team_name;
+```
+
+5. List the emergency event and affected individuals in Downtown
+```sql
+SELECT Disaster_TYPE,NAME
+FROM EMERGENCY_EVENT E, AFFECTED_AREA A1,AFFECTED_INDIVIDUAL A2
+WHERE E.EMG_ID=A1.EMG_ID AND A1.AREA_ID=A2.AREA_ID AND A1.LOCATION='Downtown'
+JOIN AFFECTED_AREA a ON e.Emg_id = a.Emg_id
+JOIN AFFECTED_INDIVIDUAL i ON a.Area_id = i.Area_id
+```
+
+6. Display the name of area with highest affected
+population with location and damage extent
+```sql
+SELECT LOCATION,DAMAGE_EXTENT,POPULATION
+FROM AFFECTED_AREA
+WHERE POPULATION=(SELECT MAX(POPULATION)
+                                          FROM AFFECTED_AREA)
+```
+                                          
+7. Find the number of emergency events that each team has responded to, and list the teams in descending order of the number of events they have responded to.
+```sql
+SELECT t.Team_id, t.Team_name, count( e.Emg_id)
+FROM TEAM t,EVENT_RESPONSE e
+where t.task_id=e.task_id
+GROUP BY t.Team_id, t.Team_name
+ORDER BY count( e.Emg_id) DESC
+```
+
+8. Retrieve the task names and the corresponding team names and leader  involved in responding to emergencies with the largest affected population area.
+```sql
+select tr.task_name,t.team_name,t.team_leader
+from task tr,team t
+where t.task_id=tr.task_id and tr.task_id in(select task_id
+                    from event_response
+                     where emg_id in(select emg_id
+                                    from affected_area
+                                    where population=(select max(population)
+                                                       from affected_area)))
+group by tr.task_name,t.team_name,t.team_leader
+
+```
+
+
+9. What is the count of injury type for individuals affected
+by each emergency event?
+ ```sql
+select e.disaster_type,count(a2.injury_type)
+from emergency_event e
+join affected_area a1 on e.emg_id=a1.emg_id
+join affected_individual a2 on a1.area_id=a2.area_id
+group by e.disaster_type
+```
+10. Retrieve all the emergency events that occurred after 2005 
+```sql
+SELECT EMG_ID,disaster_TYPE,START_DATE
+FROM EMERGENCY_EVENT 
+WHERE start_date > '2005';
+```
+11. Give the names of all individuals who have been affected by an event in area id 1
+```sql 
+SELECT ai.Name 
+FROM AFFECTED_INDIVIDUAL ai 
+INNER JOIN AFFECTED_AREA aa ON ai.Area_id = aa.Area_id 
+WHERE aa.Area_id = 1;
+```
+12. Retrieve the donation amounts and types received by emergency events involved in responding to emergencies
+
+```sql
+select d.area_id,sum(d.amount),ee.disaster_type
+from donation d,affected_area aa,emergency_event ee
+where d.area_id=aa.area_id and aa.emg_id=ee.emg_id
+group by d.area_id,ee.disaster_type
+order by sum(d.amount) desc
+```
+13. Give the number of individuals affected by each severity level.
+```sql
+SELECT Injury_type, Severity, COUNT(*) AS total_individuals
+FROM AFFECTED_INDIVIDUAL
+GROUP BY Injury_type, Severity;
+```
+
+
+14.	Display the locations of affected area where individuals are severly injured in any emergency event
+```sql
+SELECT LOCATION
+FROM AFFECTED_AREA A1,AFFECTED_INDIVIDUAL A2
+WHERE A1.AREA_ID=A2.AREA_ID AND A2.SEVERITY='Severe'
+```
+
+15. Retrieve the names of all individuals affected by emergencies that required the "'Medical response'" task.
+```
+select ai.name,ai.area_id
+from affected_individual ai
+where ai.area_id in(select aa.area_id
+                    from affected_area aa,event_response er,task tr
+                    where aa.emg_id=er.emg_id and er.task_id=tr.task_id 
+                    and tr.task_name='Medical response')
+```
+
+16.List the team names and their tasks who use bus  for evacuation
+```sql
+SELECT T1.TEAM_NAME,T2.TASK_name,e1.area_id
+FROM TEAM T1,TASK T2,EVACUATION E1
+WHERE T1.TASK_ID=T2.TASK_ID AND E1.TEAM_ID=T1.TEAM_ID 
+AND E1.TRANSPORT='Bus' 
+```
+
+17.Display the quantity of supplies with their name utilized during earthquake
+```sql
+SELECT R.TYPE,R.QUANTITY
+FROM RESOURCES R,TEAM T1,EVENT_RESPONSE E1,EMERGENCY_EVENT E2
+WHERE R.TEAM_ID=T1.TEAM_ID AND T1.TASK_ID=E1.TASK_ID AND E1.EMG_ID=E2.EMG_ID 
+AND E2.disaster_TYPE='Earthquake'
+```
+
+18.Display the  no of teams involved during each emergency event
+```sql
+SELECT E2.DISASTER_TYPE,COUNT(T1.TEAM_ID)
+FROM EMERGENCY_EVENT E2,EVENT_RESPONSE E1,TEAM T1
+WHERE E2.EMG_ID=E1.EMG_ID AND E1.TASK_ID=T1.TASK_ID
+GROUP BY E2.DISASTER_TYPE
+```
+19. Give the count of all emergency events.
+```sql
+SELECT COUNT(*) 
+AS total_emg_events 
+FROM EMERGENCY_EVENT;
+```
+
+20.Retrieve the total quantity of resources used by teams involved in responding to emergencies of a certain disaster type.
+```sql
+select sum(quantity)
+from resources
+where team_id in(select team_id
+from team
+where task_id in(select task_id
+from event_response
+where emg_id in(select emg_id
+                from emergency_event
+                where  disaster_type='Earthquake')))
+```
+
+
+
+21. Display the name of area with number of affected individuals reported for each event
+```sql
+SELECT A1.LOCATION,E.DISASTER_TYPE,COUNT(A2.INDIVIDUAL_ID)
+FROM AFFECTED_AREA A1,AFFECTED_INDIVIDUAL A2,EMERGENCY_EVENT E
+WHERE A1.AREA_ID=A2.AREA_ID AND A1.EMG_ID=E.EMG_ID
+GROUP BY A1.LOCATION,E.DISASTER_TYPE
+```
+22.Retrieve the number of teams involved in event 105.
+```sql
+SELECT COUNT(DISTINCT Task_id) 
+FROM EVENT_RESPONSE
+WHERE emg_id = 105;
+```
+
+23.Calculate the total number of individuals affected by events that  occurred in areas with a damage extent of severe and were responded to by teams with a task id of 602.
+```sql
+SELECT COUNT(*) AS TotalAffectedIndividuals
+FROM AFFECTED_INDIVIDUAL ai
+JOIN AFFECTED_AREA aa ON ai.AREA_ID = aa.AREA_ID
+JOIN EVENT_RESPONSE er ON aa.EMG_ID = er.EMG_ID AND er.Task_ID = 602
+WHERE aa.DAMAGE_EXTENT = 'Severe';
+```
+
+24. Retrieve the names of all affected individuals and their severity level in areas where the population is above 500.
+```sql
+SELECT ai.NAME, ai.SEVERITY
+FROM AFFECTED_INDIVIDUAL ai 
+WHERE ai.AREA_ID IN ( SELECT aa.AREA_ID 
+                      FROM AFFECTED_AREA aa 
+                      WHERE aa.POPULATION > 500)
+
+25. Retrieve the number of individuals affected in each injury type.
+SELECT injury_type, COUNT(*)
+FROM AFFECTED_INDIVIDUAL 
+GROUP BY injury_type;
+```
+
+26. Retrieve the start time of the emergency with the largest affected area.
+```sql
+select start_date
+ from emergency_event
+ where emg_id in( select emg_id
+ from affected_area
+ where population in(select max(population)
+          from affected_area))
+```
+27. Give the average population of areas affected by each emergency event.
+```sql
+SELECT Emg_id, AVG(Population) AS avg_population
+FROM AFFECTED_AREA
+GROUP BY Emg_id;
+```
+28.Retrieve the names of all affected individuals and the corresponding area name where the disaster occurred:
+```sql
+SELECT ai.NAME, aa.LOCATION 
+FROM AFFECTED_INDIVIDUAL ai 
+INNER JOIN AFFECTED_AREA aa ON ai.AREA_ID = aa.AREA_ID 
+WHERE ai.AREA_ID = aa.AREA_ID; 
+```
+
+29.Retrieve the names of all teams and leader involved in the disaster response and their corresponding task name:
+```sql
+SELECT t.TEAM_NAME, tr.TASK_NAME ,t.team_leader
+FROM TEAM t,task tr
+where t.task_id=tr.task_id 
+```
+30. Find all tasks that are required for emergencies that occurred in locations with a population greater than 1000:
+```sql
+select  task_name
+from task
+where task_id in(select er.task_id
+                 from event_response er,affected_area aa
+                 where er.emg_id=aa.emg_id and aa.population>1000)
+```              
+ 31. Retrieve the name and severity of injury of the affected individuals for EMG_ID 105.
+```sql
+SELECT NAME, SEVERITY 
+FROM AFFECTED_INDIVIDUAL 
+WHERE AREA_ID IN ( SELECT AREA_ID
+                   FROM AFFECTED_AREA 
+                WHERE Emg_id = 105 ); 
+ ```              
+32. Retrieve the names of the tasks required for EMG_ID 103.
+```sql
+SELECT TASK_NAME 
+FROM TASK
+WHERE TASK_ID IN ( SELECT TASK_ID
+                    FROM EVENT_RESPONSE  
+                    WHERE EMG_ID = 103 ); 
+```
+
+33.Create a view to display the total quantity of each resource used in the emergency response:
+```sql
+CREATE VIEW resource_summary_view AS 
+SELECT r.TYPE, SUM(r.QUANTITY) AS TOTAL_QUANTITY 
+FROM RESOURCE r 
+GROUP BY r.TYPE;
+```
+
+34.Create a view to display the number of teams assigned to each task required for a specific emergency:
+```sql
+CREATE VIEW task_assignment_view AS 
+SELECT tr.TASK_NAME, COUNT(t.TEAM_ID) AS NUM_TEAMS 
+FROM TASK tr 
+JOIN TEAM t ON tr.TASK_ID = t.TASK_ID 
+JOIN EVENT_RESPONSE er ON t.TEAM_ID = er.TEAM_ID 
+WHERE er.EMG_ID = 101 
+GROUP BY tr.TASK_NAME;
+```
+35. Create a procedure that deletes all records of a given disaster type from the database.
+```sql
+CREATE  PROCEDURE NEW_DELETE_DISASTER_TYPE (disaster_type IN VARCHAR2) 
+IS
+BEGIN 
+  DELETE FROM AFFECTED_AREA 
+  WHERE Emg_id IN ( SELECT Emg_id FROM EMERGENCY_EVENT WHERE disaster_Type = disaster_type ); 
+  DELETE FROM AFFECTED_INDIVIDUAL 
+  WHERE Area_id IN ( SELECT Area_id FROM AFFECTED_AREA WHERE Emg_id IN ( SELECT Emg_id FROM EMERGENCY_EVENT WHERE Type = disaster_type ) ); 
+  DELETE FROM EVENT_RESPONSE WHERE Emg_id IN ( SELECT Emg_id FROM EMERGENCY_EVENT WHERE Type = disaster_type ); 
+  DELETE FROM EMERGENCY_EVENT WHERE disaster_Type = disaster_type; 
+END;
+```
+
+36. Create a function that returns the number of individuals affected by a given emergency event.
+```sql
+CREATE FUNCTION GET_NUM_AFFECTED11 ( emg_id INT ) 
+RETURN INT 
+IS 
+  num_affected INT; 
+BEGIN 
+  SELECT COUNT(*) INTO num_affected
+  FROM AFFECTED_INDIVIDUAL 
+  WHERE Area_id IN (SELECT Area_id FROM AFFECTED_AREA WHERE Emg_id = emg_id); 
+  RETURN num_affected;
+END;
+```
+37) total number of affected individuals in each affected area:
+```sql
+SELECT a.AREA_ID, a.POPULATION, 
+       (SELECT COUNT(*) 
+        FROM AFFECTED_INDIVIDUAL ai 
+        WHERE ai.AREA_ID = a.AREA_ID) AS TOTAL_AFFECTED 
+FROM AFFECTED_AREA a;
+total number of resources used by each team for each task:
+```
+38)
+```sql
+SELECT t.TEAM_ID, t.TEAM_NAME, tr.TASK_ID, tr.TYPE, tr.QUANTITY, 
+       (SELECT SUM(tr2.QUANTITY) 
+        FROM RESOURCES tr2 
+        WHERE tr2.TEAM_ID = t.TEAM_I) AS TOTAL_USED 
+FROM TEAM t 
+JOIN RESOURCES tr ON t.TEAM_ID = tr.TEAM_ID;
+```
+
+
+39) To get the number of evacuations performed by each team in each affected area:
+```sql
+SELECT t.TEAM_ID, t.TEAM_NAME, e.AREA_ID, 
+       (SELECT COUNT(*) 
+        FROM EVACUATION e2 
+        WHERE e2.TEAM_ID = t.TEAM_ID AND e2.AREA_ID = e.AREA_ID) AS TOTAL_EVACUATIONS 
+FROM TEAM t 
+JOIN EVACUATION e ON t.TEAM_ID = e.TEAM_ID;
+```
