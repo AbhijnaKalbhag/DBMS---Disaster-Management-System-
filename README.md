@@ -26,7 +26,7 @@
 
 ### Relational Database Schema - -ER diagram
 
-![alt text]()
+![alt text](schema.png)
 
 ### ER diagram 
 
